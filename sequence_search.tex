@@ -1,0 +1,49 @@
+\section{Current approaches to sequence search}
+\label{sec:SeqSearchApproches}
+
+Sequence-based searches attempt to match a sequence string query to a target sequence within the search set. Queries can vary in sequence length as well as the identity between query and intended search targets depending on use cases that range from identifying samples with targets that generally match a genome-sized query to identifying sequences that are similar to conserved domain within a gene to explicitly matching sets of nucleotide variations. A variety of approaches have been developed to search SRA data, alignment, indexing, suffix arrays, model-based approaches (HMMER, neural nets, etc.) (7,8),  and others. Tools that implement indexing and/or alignment based strategies that will be the focus here. 
+
+\subsection{Alignment-based searches}
+\label{sec:AlignmentBased}
+
+Sequence alignment is a method that positions the biological sequences’ building blocks to identify regions of similarity that may have consequences for functional, structural, or evolutionary relationships. In the 80s and 90s many alignment-based methods were developed to help researchers make sense of next-generation sequence data. Some of the most well-known alignment tools are BLAST, Smith-waterman, BLAT, etc. The BLAST tools are still the most popular ways to execute a search on many web-based biological platforms (EBI, IMG, Phytozome, etc). There have been advances in improving the computational efficiency of the aligners, however, there are trade-offs in efficiency, sensitivity, and accuracy. Alignment is still irreplaceable in many aspects of today's biology, such as the annotation of conserved protein domains and motifs, tracking phenotype-related sequence polymorphisms, reconstruction of ancestral DNA sequences, determining the rate of sequence evolution, and homology-based modeling of three-dimensional protein structures, all of which require highly sensitive matching.
+
+\subsection{Index-based searches}
+\label{sec:IndexBased}
+
+Performing alignment-based sequence-level searches on large collections of SRA and WGS data can quickly become impractical due to size of the databases. For instance, given a query sequence, searching across all metagenomes in the SRA would entail a BLAST search against >3.2 million (~2 PB of data) accessions.  Such searches are not only hard to scale due to the significant memory and time footprint, but can be infeasible when searching across the entire database. As a result, users will have to limit their searches based on attributes such as taxonomy, metadata, sequencing platform etc. Alternatively, several index-based approaches break the search space down to short non-overlapping sequence strings of a fixed length called “k-mers”. These k-mers are then associated either directly with the sample from which they originated or with organisms or other biological markers in the sample and stored in an index. The query sequence is broken down into overlapping k-mers of the same length that are then used to “look up” samples that include matching k-mers, organisms, or biological markers. Notable examples for the index-based approach include BIGSI (BItsliced Genomic Signature Index)[18], Soumash/Branchwater [22-24], Pebblescout [20], Kraken[15,16], STAT[17].
+
+\subsection{Alignment-based vs Index-based comparison}
+\label{sec:compareSeqMethods}
+
+Index and alignment methods each have their own advantages and disadvantages:
+\begin{itemize}
+    \item Index searches provide potentially rapid search across many targets
+    \item Index searches are dependent on the representation of the search space and are influenced by the density of target sequence sampling 
+    \item Index searches typically require exact matches between query and target, which could limit their sensitivity to diverged sequences
+    \item Indexes used to support search can be very large, but there are approaches to reduce size (min-hash, sequential indexes, bloom filters)
+    \item Index based approaches require the index to grow incrementally as new sequences (assembled or unprocessed) are deposited. Depending on the organism, there can be enormous diversity (eg. viruses) which could limit scaling the index.
+    \item Alignment methods allow for mismatches between query and target providing a mechanisms for identifying related, but not exact matches to the query
+    \item Existing alignment methods also support model based queries
+    \item Alignment methods can be computationally expensive as well as memory intensive
+    \item Performance metrics of index and alignment based methods
+Can we include metrics around size (index tables vs alignment dbs) and performance (lookup vs linear vs quadratic)
+    \item Index-based and alignment-based methodologies are not mutually exclusive. Index-based methods can be used to reduce the search space prior to attempting to build alignments. In practice k-mer lookups are used to reduce the sequence search space 
+    \item Transition to scaling section - All of these issues will be exacerbated by the continued growth of data generation. A focused community-based approach is crucial to identifying a path toward more accessible and usable sequence data archives. 
+
+\end{itemize}
+
+\section{Challenges for large-scale sequence search}
+\label{sec:SeqSearchChallenges}
+
+Data repositories are growing constantly, so as soon as an index is created, it is out of date. Similarly, as the repository’s size increases, alignment-based approaches become too expensive. There are fundamental limitations to each approach explored in the codeathon, however, these approaches also represent the best tools available for a problem that must be addressed to maintain the usability of the Sequence Read Archive. 
+A scientist conducts a search for data because they need it to support an experiment or inquiry. Different scientific questions may require different indexes of the sequence data or flexible workflows to set up a series of steps that filter and refine their search. The concept of search must be expanded to include not just SQL-style queries optimized for joining metadata, but fast analysis tools that allow a user to reconfigure data structures on the fly to look for relationships. Refinement of search-based workflows yields insights into the strengths and weaknesses of different components, and can pinpoint where resources should be invested. 
+Working directly with the raw reads, while challenging, avoids potential issues created by inconsistent data processing. For example, large fractions of metagenomic datasets do not assemble into contigs, so a comprehensive search of information from those samples must be done at the read level. 
+Exploration of sequence data is amenable to a hybrid indexing and alignment approach where the inexpensive indexes can be calculated and used to reduce the search space for the more costly and sensitive alignment methods. 
+
+\paragraph{Challenges with clustering:}
+-Costs of building the clustered database and dealing with iterative updates
+- Clustering is very difficult for metagenomes- you always end up with sequences that are not clusterable- do you throw them away, do you keep them; what do you do?
+- At what level do you cluster?? Kmer, read, contig, nucleotide, amino acid, etc.…?  The clustering might need to be catered to the type of sample you have: A metagenome, which is complex and has sparse coverage, might need to be clustered differently than a less complex sample like a single organism where you have way higher coverage across the entire genome
+-Defining the meaningful pieces of sequences (it’s like defining what “words” are in natural language processing) and the attributes that make up the semantic space. 
+-Compressing search space using current biological knowledge is problematic for metagenomes, which have a lot of diversity; for example, if you align at the protein level, you might only get ~50\% of your reads aligned to known proteins- then what do you do with the rest of the reads?  Also, this approach is based on current biological knowledge, which is likely incomplete; one panelist was “worried about “pouring concrete” on our current understanding of biology if we set up our scientific searches to implicitly depend on current assumptions.”
